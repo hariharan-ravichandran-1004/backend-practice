@@ -1,21 +1,27 @@
 package com.backend.java.mapper;
-import com.backend.java.model.dto.register.RegisterRequestDto;
+import org.springframework.stereotype.Component;
+import com.backend.java.model.dto.login.LoginResponseDto;
+import com.backend.java.model.dto.register.RegisterResponseDto;
+import com.backend.java.model.dto.user.UserResponseDto;
 import com.backend.java.model.entity.UserEntity;
-
+@Component
 public class UserMapper {
 
-    public static UserEntity toEntity(RegisterRequestDto dto) {
-        UserEntity user = new UserEntity();
-        user.setName(dto.getName());
-        user.setEmail(dto.getEmail());
-        return user;
+    public UserResponseDto toUserResponse(UserEntity user) {
+        return new UserResponseDto(
+                user.getId(),
+                user.getEmail()
+        );
     }
 
-    // public static UserResponseDto toDto(UserEntity user) {
-    //     UserResponseDto dto = new UserResponseDto();
-    //     dto.setId(user.getId());
-    //     dto.setName(user.getName());
-    //     dto.setEmail(user.getEmail());
-    //     return dto;
-    // }
+    public RegisterResponseDto toRegisterResponse(UserEntity user) {
+        return new RegisterResponseDto("User created successfully");
+    }
+
+    public LoginResponseDto toLoginResponse(UserEntity user) {
+        return new LoginResponseDto(
+                "Login successful",
+                toUserResponse(user)
+        );
+    }
 }

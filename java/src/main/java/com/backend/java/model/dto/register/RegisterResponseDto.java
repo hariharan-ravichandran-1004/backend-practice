@@ -1,13 +1,17 @@
 package com.backend.java.model.dto.register;
 public class RegisterResponseDto {
 
-    public RegisterResponseDto() {
-        this.message = "User created successfully.";
-    }
-
     private String message;
 
-    String getMessage() {
+    public RegisterResponseDto(String message) {
+        this.message = message;
+    }
+
+    public String getMessage() {
         return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }
