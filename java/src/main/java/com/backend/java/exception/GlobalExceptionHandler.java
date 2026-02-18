@@ -1,8 +1,14 @@
 package com.backend.java.exception;
+
+import com.backend.java.exception.CustomExceptions.EmailAlreadyExistsException;
+import com.backend.java.exception.CustomExceptions.InvalidCredentialsException;
 import com.backend.java.model.dto.ErrorResponseDto;
 import jakarta.servlet.http.HttpServletRequest;
+
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -12,7 +18,41 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Validation errors → 400 Bad Request
+      // --- Missing or unreadable JSON body (400) ---
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponseDto> handleMissingRequestBody(
+            HttpMessageNotReadableException ex, HttpServletRequest request) {
+
+        ErrorResponseDto response = new ErrorResponseDto();
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        response.setError(HttpStatus.BAD_REQUEST.getReasonPhrase());
+        response.setMessage("Request body is missing or invalid JSON");
+        response.setPath(request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+public ResponseEntity<ErrorResponseDto> handleDuplicateKey(
+        DataIntegrityViolationException ex, HttpServletRequest request) {
+
+    String message = "Duplicate entry detected";
+
+    // Optional: detect if it's specifically the email constraint
+    if (ex.getMostSpecificCause().getMessage().contains("uk6dotkott2kjsp8vw4d0m25fb7")) {
+        message = "Email already exists";
+    }
+
+    ErrorResponseDto response = new ErrorResponseDto();
+    response.setStatus(HttpStatus.CONFLICT.value());
+    response.setError(HttpStatus.CONFLICT.getReasonPhrase());
+    response.setMessage(message);
+    response.setPath(request.getRequestURI());
+
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+}
+
+    // 1️⃣ Validation errors → 400 Bad Request
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDto> handleValidationErrors(
             MethodArgumentNotValidException ex, HttpServletRequest request) {
@@ -31,10 +71,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
-    // Business errors → 409 Conflict
-    @ExceptionHandler(IllegalStateException.class)
+    // 2️⃣ Business errors → 409 Conflict
+    @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ErrorResponseDto> handleBusinessErrors(
-            IllegalStateException ex, HttpServletRequest request) {
+            EmailAlreadyExistsException ex, HttpServletRequest request) {
 
         ErrorResponseDto response = new ErrorResponseDto();
         response.setStatus(HttpStatus.CONFLICT.value());
@@ -45,7 +85,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
-    // Fallback for unexpected errors → 500 Internal Server Error
+    // 3️⃣ Authentication errors → 401 Unauthorized
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponseDto> handleAuthErrors(
+           CustomExceptions.InvalidCredentialsException ex, HttpServletRequest request) {
+
+        ErrorResponseDto response = new ErrorResponseDto();
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setError(HttpStatus.UNAUTHORIZED.getReasonPhrase());
+        response.setMessage(ex.getMessage());
+        response.setPath(request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    // 4️⃣ Fallback for all other exceptions → 500 Internal Server Error
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleOtherExceptions(
             Exception ex, HttpServletRequest request) {
@@ -55,6 +109,9 @@ public class GlobalExceptionHandler {
         response.setError(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
         response.setMessage("Something went wrong");
         response.setPath(request.getRequestURI());
+
+        // Optional: print stack trace for debugging
+        ex.printStackTrace();
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }

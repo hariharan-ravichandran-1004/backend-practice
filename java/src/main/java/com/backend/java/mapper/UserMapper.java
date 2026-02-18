@@ -18,10 +18,12 @@ public class UserMapper {
         return new RegisterResponseDto("User created successfully");
     }
 
-    public LoginResponseDto toLoginResponse(UserEntity user) {
+    public LoginResponseDto toLoginResponse(UserEntity user,String token) {
         return new LoginResponseDto(
                 "Login successful",
-                toUserResponse(user)
+                toUserResponse(user),
+                token
+
         );
     }
 }
